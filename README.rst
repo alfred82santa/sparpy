@@ -1,5 +1,5 @@
 ======================================
-Sparpy: A spark entry point for python
+Sparpy: A Spark entry point for python
 ======================================
 
 
@@ -18,8 +18,33 @@ On package `setup.py` a entry point must be configured for Sparpy:
         entry_points={
             ...
             'sparpy.cli_plugins': [
-                'name_of_plugin_command_1=yourpackage.module:command_1',
-                'name_of_plugin_command_2=yourpackage.module:command_2',
+                'my_command_1=yourpackage.module:command_1',
+                'my_command_2=yourpackage.module:command_2',
             ]
         }
     )
+
+.. note::
+
+    Avoid to use PySpark as requirement in order to not download package from pypi.
+
+-------
+Install
+-------
+
+It must be installed on a Spark edge node.
+
+.. code-block:: bash
+
+    $  pip install sparpy
+
+
+----------
+How to use
+----------
+
+Using default Spark submit parameters:
+
+.. code-block:: bash
+
+    $ sparpy-submit --plugin "mypackage>=0.1" my_command_1 --myparam 1
