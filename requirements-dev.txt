@@ -1,0 +1,6 @@
+pep8
+flake8
+coverage
+nose
+autopep8
+isort
