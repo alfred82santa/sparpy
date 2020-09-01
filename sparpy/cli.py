@@ -1,13 +1,12 @@
-import subprocess
-import sys
 from pathlib import Path
 from shutil import rmtree
 
 import click
 
-from sparpy.cli_options import plugins_options, spark_options
-from sparpy.plugins import DynamicGroup, download_plugins
-from sparpy.spark import build_spark_submit_command
+from sparpy.cli_options import general_options, plugins_options, spark_options
+from sparpy.logger import build_logger
+from sparpy.plugins import DownloadPlugins, DynamicGroup
+from sparpy.spark import SparkSubmitCommand
 
 
 @click.group(cls=DynamicGroup)
@@ -20,6 +19,7 @@ def run_sparpy_runner():
 
 
 @click.command(name='sparpy')
+@general_options
 @plugins_options
 @spark_options
 @click.pass_context
@@ -41,35 +41,45 @@ def run_sparpy():
 
 
 @click.command(name='sparpy-submit')
+@general_options
 @plugins_options
 @spark_options
-def sparpy_submit(plugin,
+def sparpy_submit(config,
+                  debug,
+                  plugin,
                   requirements_file,
                   extra_index_url,
+                  spark_submit_executable,
                   master,
                   deploy_mode,
                   conf,
                   packages,
                   repositories,
                   job_args,
-                  no_self):
-    reqs_path = download_plugins(plugins=plugin,
-                                 requirements_files=requirements_file,
-                                 extra_index_urls=extra_index_url,
-                                 no_self=no_self)
+                  no_self,
+                  *,
+                  logger=None):
+    logger = logger or build_logger(config, debug)
 
-    spark_exec = build_spark_submit_command(master=master,
-                                            deploy_mode=deploy_mode,
-                                            conf=conf,
-                                            packages=packages,
-                                            repositories=repositories,
-                                            job_args=job_args)
+    reqs_path = DownloadPlugins(config=config,
+                                plugins=plugin,
+                                requirements_files=requirements_file,
+                                extra_index_urls=extra_index_url,
+                                no_self=no_self,
+                                logger=logger).download(debug=debug)
 
-    click.echo('Executing Spark job...')
+    spark_command = SparkSubmitCommand(config=config,
+                                       spark_executable=spark_submit_executable,
+                                       master=master,
+                                       deploy_mode=deploy_mode,
+                                       conf=conf,
+                                       packages=packages,
+                                       repositories=repositories,
+                                       reqs_paths=[reqs_path, ],
+                                       logger=logger)
+
     try:
-        click.echo(' '.join(spark_exec))
-        if subprocess.check_call(spark_exec, stdout=sys.stdout, stderr=sys.stderr):
-            raise RuntimeError()
+        spark_command.run(job_args=job_args)
     finally:
         if reqs_path:
             rmtree(reqs_path)

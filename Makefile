@@ -50,7 +50,7 @@ clean:
 
 flake:
 	@echo "Running flake8 tests..."
-	flake8 $(PACKAGE_NAME) --exclude=scripts
+	flake8 $(PACKAGE_NAME)
 	flake8 tests
 	isort -rc -y -c $(PACKAGE_NAME)
 	isort -rc -y -c tests
