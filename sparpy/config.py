@@ -16,7 +16,7 @@ def load_user_config(filename: PathLike = None) -> BaseConfigParser:
     if not filename:
         filename = Path.home() / '.sparpyrc'
         if not filename.is_file():
-            filename = Path('/etc/sparkpy.conf')
+            filename = Path('/etc/sparpy.conf')
             if not filename.is_file():
                 return ConfigParser()
     return load_config(filename)
