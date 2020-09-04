@@ -18,7 +18,7 @@ def run_sparpy_runner():
     sparpy_runner(obj={})
 
 
-@click.command(name='sparpy')
+@click.command(name='sparpy', context_settings=dict(ignore_unknown_options=True))
 @general_options
 @plugins_options
 @spark_options
@@ -40,7 +40,7 @@ def run_sparpy():
     sparpy(obj={})
 
 
-@click.command(name='sparpy-submit')
+@click.command(name='sparpy-submit', context_settings=dict(ignore_unknown_options=True))
 @general_options
 @plugins_options
 @spark_options

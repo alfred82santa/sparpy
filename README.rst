@@ -7,6 +7,14 @@ Changelog
 ---------
 
 ......
+v0.2.1
+......
+
+* Force `pyspark` python executable to same than `sparpy`.
+* Fix unrecognized options.
+* Fix default configuration file names.
+
+......
 v0.2.0
 ......
 
@@ -57,7 +65,7 @@ Using default Spark submit parameters:
 
 .. code-block:: bash
 
-    $ sparpy-submit --plugin "mypackage>=0.1" my_command_1 --myparam 1
+    $ sparpy --plugin "mypackage>=0.1" my_plugin_command --myparam 1
 
 
 -------------------
@@ -65,7 +73,7 @@ Configuration files
 -------------------
 
 `sparpy` and `sparpu-submit` accept the parameter `--config` that allow to set a configuration file. If it is not set
-it will try to use configuration file `$HOME/.sparpyrc`. It if does not exist it will try to use `/etc/sparkpy.conf`.
+it will try to use configuration file `$HOME/.sparpyrc`. It if does not exist it will try to use `/etc/sparpy.conf`.
 
 Format:
 

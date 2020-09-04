@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from itertools import chain
@@ -92,8 +93,11 @@ class SparkSubmitCommand:
         self.logger.info('Executing Spark job...')
         spark_command = self.build_command(job_args=job_args)
 
+        env = os.environ.copy()
+        env['PYSPARK_PYTHON'] = sys.executable
+
         self.logger.info(' '.join(spark_command))
-        result = subprocess.check_call(spark_command, stdout=sys.stdout, stderr=sys.stderr)
+        result = subprocess.check_call(spark_command, stdout=sys.stdout, stderr=sys.stderr, env=env)
         if result:
             self.logger.error(f'Spark job failed with error: {result}')
             raise RuntimeError()

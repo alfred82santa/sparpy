@@ -100,6 +100,7 @@ def spark_options(func=None):
 
 
 class Config(click.ParamType):
+    name = 'configfile'
 
     def __call__(self, value, param=None, ctx=None):
         return self.convert(value, param, ctx)
