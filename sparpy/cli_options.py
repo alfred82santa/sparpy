@@ -31,10 +31,25 @@ def plugins_options(func=None):
                 help='Plugins requirements file'
             ),
             click.option(
+                '--no-index',
+                is_flag=True,
+                type=bool,
+                default=None,
+                help='Ignore package index (only looking at --find-links URLs instead).'
+            ),
+            click.option(
                 '--extra-index-url', '-e',
                 type=str,
                 multiple=True,
                 help='Extra repository url'
+            ),
+            click.option(
+                '--find-links', '-f',
+                type=str,
+                multiple=True,
+                help='If a URL or path to an html file, then parse for links to archives such as sdist (.tar.gz)'
+                     ' or wheel (.whl) files. If a local path or file:// URL that\'s a directory,  then look for'
+                     ' archives in the directory listing. Links to VCS project URLs are not supported.'
             ),
             click.option(
                 '--no-self',
@@ -42,7 +57,14 @@ def plugins_options(func=None):
                 type=bool,
                 default=False,
                 help='No include Sparpy itself as requirement'
-            )
+            ),
+            click.option(
+                '--force-download',
+                is_flag=True,
+                type=bool,
+                default=None,
+                help='Avoid cache and download all packages'
+            ),
         )
 
     if func:
@@ -50,15 +72,10 @@ def plugins_options(func=None):
     return inner
 
 
-def spark_options(func=None):
+def common_spark_options(func=None):
     def inner(fn):
         return apply_decorators(
             fn,
-            click.option(
-                '--spark-submit-executable',
-                type=str,
-                help='Spark submit executable'
-            ),
             click.option(
                 '--master',
                 type=str,
@@ -69,6 +86,11 @@ def spark_options(func=None):
                 type=str,
                 help='Whether to deploy your driver on the worker nodes (cluster) '
                      'or locally as an external client (client)'
+            ),
+            click.option(
+                '--queue',
+                type=str,
+                help='The name of the YARN queue to which the application is submitted.'
             ),
             click.option(
                 '--conf',
@@ -86,11 +108,48 @@ def spark_options(func=None):
                 '--repositories',
                 type=str,
                 help='Comma-delimited list of Maven repositories'
+            )
+        )
+
+    if func:
+        return inner(func)
+    return inner
+
+
+def spark_submit_options(func=None):
+    def inner(fn):
+        return apply_decorators(
+            fn,
+            click.option(
+                '--spark-submit-executable',
+                type=str,
+                help='Spark submit executable'
             ),
             click.argument(
                 'job_args',
                 nargs=-1,
                 type=click.UNPROCESSED
+            )
+        )
+
+    if func:
+        return inner(func)
+    return inner
+
+
+def spark_interactive_options(func=None):
+    def inner(fn):
+        return apply_decorators(
+            fn,
+            click.option(
+                '--pyspark-executable',
+                type=str,
+                help='PySpark executable'
+            ),
+            click.option(
+                '--python-interactive-driver',
+                type=str,
+                help='Python interactive driver'
             )
         )
 

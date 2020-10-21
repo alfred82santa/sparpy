@@ -52,15 +52,15 @@ flake:
 	@echo "Running flake8 tests..."
 	flake8 $(PACKAGE_NAME)
 	flake8 tests
-	isort -rc -y -c $(PACKAGE_NAME)
-	isort -rc -y -c tests
+	isort -c ${ISORT_PARAMS} ${PACKAGE_NAME}
+	isort -c ${ISORT_PARAMS} tests
 
 autopep:
 	autopep8 --max-line-length 120 -r -j 8 -i -a --exclude ./docs/source/conf.py .
 
 sort-imports:
-	isort -rc -y $(PACKAGE_NAME)
-	isort -rc -y tests
+	isort ${ISORT_PARAMS} ${PACKAGE_NAME}
+	isort ${ISORT_PARAMS} tests
 
 beautify: autopep sort-imports
 

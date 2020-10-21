@@ -46,7 +46,7 @@ setup(
 
     version=version,
 
-    description='A spark entry point for python',
+    description='An Spark entry point for python',
     long_description=long_description,
 
     url='https://github.com/alfred82santa/sparpy',
@@ -69,6 +69,8 @@ setup(
             'sparpy=sparpy.cli:run_sparpy',
             'sparpy-runner=sparpy.cli:run_sparpy_runner',
             'sparpy-submit=sparpy.cli:run_sparpy_submit',
+            'sparpy-download=sparpy.cli:run_sparpy_download',
+            'isparpy=sparpy.cli:run_isparpy',
         ]
     }
 )

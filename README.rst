@@ -1,16 +1,28 @@
-======================================
-Sparpy: A Spark entry point for python
-======================================
+=======================================
+Sparpy: An Spark entry point for python
+=======================================
 
 ---------
 Changelog
 ---------
 
 ......
+v0.3.0
+......
+
+* Enable `--force-download` option.
+* Added `--find-links` option in order to use a directory as package repository.
+* Added `--no-index` option in order to avoid to use external package repositories.
+* Added `--queue` option in order to set yarn queue.
+* Ensure driver's python executable is same python as `sparpy`.
+* Added new entry point `sparpy-download` just to download packages to specific directory.
+* Added new entry point `isparpy` in order to start an interactive session.
+
+......
 v0.2.1
 ......
 
-* Force `pyspark` python executable to same than `sparpy`.
+* Force `pyspark` python executable to same as `sparpy`.
 * Fix unrecognized options.
 * Fix default configuration file names.
 
@@ -25,7 +37,7 @@ v0.2.0
 How to build a Sparpy plugin
 ----------------------------
 
-On package `setup.py` a entry point must be configured for Sparpy:
+On package `setup.py` an entry point should be configured for Sparpy:
 
 .. code-block:: python
 
@@ -84,6 +96,8 @@ Format:
     master=yarn
     deploy-mode=client
 
+    queue=my_queue
+
     spark-executable=/path/to/my-spark-submit
     conf=
         spark.conf.1=value1
@@ -91,11 +105,11 @@ Format:
 
     packages=
         maven:package_1:0.1.1
-        maven:package_1:0.1.1
+        maven:package_2:0.6.1
 
     repositories=
-        http://my-maven-repository-1.com/simple
-        http://my-maven-repository-2.com/simple
+        https://my-maven-repository-1.com/mvn
+        https://my-maven-repository-2.com/mvn
 
     reqs_paths=
         /path/to/dir/with/python/packages_1
@@ -104,8 +118,8 @@ Format:
     [plugins]
 
     extra-index-urls=
-        http://my-pypi-repository-1.com/simple
-        http://my-pypi-repository-2.com/simple
+        https://my-pypi-repository-1.com/simple
+        https://my-pypi-repository-2.com/simple
 
     cache-dir=/path/to/cache/dir
 
@@ -117,7 +131,17 @@ Format:
         /path/to/requirement-1.txt
         /path/to/requirement-2.txt
 
+    find-links=
+        /path/to/directory/with/packages_1
+        /path/to/directory/with/packages_2
+
     download-dir-prefix=my_prefix_
 
+    no-index=false
     no-self=false
     force-download=true
+
+    [interactive]
+
+    pyspark-executable=/path/to/pyspark
+    python-interactive-driver=/path/to/interactive/driver
