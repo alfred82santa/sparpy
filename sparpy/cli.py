@@ -148,7 +148,7 @@ def sparpy_submit(ctx,
                            logger=logger)
 
     reqs_paths = []
-    if reqs_path is None:
+    if reqs_path is not None:
         reqs_paths.append(reqs_path)
 
     spark_command = SparkSubmitCommand(config=config,
@@ -222,7 +222,7 @@ def isparpy(ctx,
                            logger=logger)
 
     reqs_paths = []
-    if reqs_path is None:
+    if reqs_path is not None:
         reqs_paths.append(reqs_path)
 
     spark_command = SparkInteractiveCommand(config=config,
