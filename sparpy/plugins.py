@@ -69,9 +69,13 @@ class DownloadPlugins:
                  plugins: Iterable[str] = None,
                  requirements_files: Iterable[str] = None,
                  extra_index_urls: Iterable[str] = None,
+                 find_links: Iterable[str] = None,
+                 no_index: bool = None,
                  no_self: bool = None,
                  force_download: bool = None,
-                 logger: Logger = None):
+                 logger: Logger = None,
+                 download_dir: str = None,
+                 convert_to_zip: bool = True):
         try:
             config = config['plugins']
         except (KeyError, TypeError):
@@ -81,6 +85,8 @@ class DownloadPlugins:
         self.logger = logger or getLogger(__name__)
 
         self.extra_index_urls = config.getlist('extra-index-urls', fallback=[])
+        self.find_links = config.getlist('find-links', fallback=[])
+        self.no_index = config.getboolean('no-index', fallback=False)
         self.cache_dir = config.getpath('cache-dir')
 
         self.plugins = config.getlist('plugins', fallback=[])
@@ -100,19 +106,32 @@ class DownloadPlugins:
         if extra_index_urls:
             self.extra_index_urls.extend(extra_index_urls)
 
+        if find_links:
+            self.find_links.extend(find_links)
+
+        if no_index is not None:
+            self.no_index = no_index
+
         if no_self is not None:
             self.no_self = no_self
 
         if force_download is not None:
             self.force_download = force_download
 
-        self.reqs_path = mkdtemp(prefix=self.download_dir_prefix)
+        if download_dir:
+            self.reqs_path = download_dir
+        else:
+            self.reqs_path = mkdtemp(prefix=self.download_dir_prefix)
+
+        self.convert_to_zip = convert_to_zip
 
     def build_command(self):
         pip_exec_params = [sys.executable, '-m', 'pip', 'download']
         pip_exec_params.extend(['-d', self.reqs_path])
 
-        if self.cache_dir:
+        if self.force_download:
+            pip_exec_params.append('--no-cache-dir')
+        elif self.cache_dir:
             pip_exec_params.extend(['--cache-dir', str(self.cache_dir)])
 
         pip_exec_params.extend(chain(*[['--extra-index-url',
@@ -120,6 +139,11 @@ class DownloadPlugins:
                                         '--trusted-host',
                                         urlparse(u).hostname]
                                        for u in self.extra_index_urls]))
+
+        pip_exec_params.extend(chain(*[['--find-links', str(r)] for r in self.find_links]))
+        if self.no_index:
+            pip_exec_params.append('--no-index')
+
         if not self.no_self:
             from . import __version__
             pip_exec_params.append(f'sparpy=={__version__}')
@@ -146,8 +170,9 @@ class DownloadPlugins:
 
         subprocess.check_call(pip_exec_params, **params)
 
-        [convert_to_zip(p.resolve())
-         for p in Path(self.reqs_path).glob('*.whl')
-         if p.is_file()]
+        if self.convert_to_zip:
+            [convert_to_zip(p.resolve())
+             for p in Path(self.reqs_path).glob('*.whl')
+             if p.is_file()]
 
         return self.reqs_path

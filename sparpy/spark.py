@@ -9,13 +9,14 @@ from typing import Iterable, Mapping, Union
 from .config import ConfigParser
 
 
-class SparkSubmitCommand:
+class BaseSparkCommand:
 
     def __init__(self,
                  config: Mapping = None,
                  spark_executable: str = None,
                  master: str = None,
                  deploy_mode: str = None,
+                 queue: str = None,
                  conf: Iterable[str] = None,
                  packages: Union[Iterable[str], str] = None,
                  repositories: Union[Iterable[str], str] = None,
@@ -30,6 +31,7 @@ class SparkSubmitCommand:
         self.spark_executable = spark_executable or config.get('spark-executable', fallback='spark-submit')
         self.master = master or config.get('master', fallback='local')
         self.deploy_mode = deploy_mode or config.get('deploy-mode', fallback='client')
+        self.queue = queue or config.get('queue')
         self.conf = config.getlist('conf', fallback=[])
         self.packages = config.getlist('packages', fallback=[])
         self.repositories = config.getlist('repositories', fallback=[])
@@ -64,8 +66,12 @@ class SparkSubmitCommand:
             if reqs_paths:
                 self.reqs_paths.extend(reqs_paths)
 
-    def build_command(self, job_args: Iterable[str]):
-        spark_cmd = [self.spark_executable, '--master', self.master, '--deploy-mode', self.deploy_mode]
+    def build_command(self, *, executable):
+        spark_cmd = [executable, '--master', self.master, '--deploy-mode', self.deploy_mode]
+
+        if self.queue:
+            spark_cmd.extend(['--queue', self.queue])
+
         if self.conf:
             spark_cmd.extend(chain(*[['--conf', c] for c in self.conf]))
 
@@ -85,6 +91,15 @@ class SparkSubmitCommand:
             if len(ps):
                 spark_cmd.extend(['--py-files', ','.join(ps)])
 
+        return spark_cmd
+
+
+class SparkSubmitCommand(BaseSparkCommand):
+
+    def build_command(self, *, job_args: Iterable[str], **kwargs):
+        kwargs.setdefault('executable', self.spark_executable)
+        spark_cmd = super(SparkSubmitCommand, self).build_command(**kwargs)
+
         spark_cmd.extend(job_args)
 
         return spark_cmd
@@ -95,9 +110,62 @@ class SparkSubmitCommand:
 
         env = os.environ.copy()
         env['PYSPARK_PYTHON'] = sys.executable
+        env['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
         self.logger.info(' '.join(spark_command))
-        result = subprocess.check_call(spark_command, stdout=sys.stdout, stderr=sys.stderr, env=env)
+        result = subprocess.check_call(spark_command,
+                                       stdout=sys.stdout,
+                                       stderr=sys.stderr,
+                                       env=env)
         if result:
             self.logger.error(f'Spark job failed with error: {result}')
+            raise RuntimeError()
+
+
+class SparkInteractiveCommand(BaseSparkCommand):
+
+    def __init__(self,
+                 config,
+                 *args,
+                 pyspark_executable: str = None,
+                 python_interactive_driver: str = None,
+                 **kwargs):
+        super(SparkInteractiveCommand, self).__init__(config, *args, **kwargs)
+
+        try:
+            config = config['interactive']
+        except (KeyError, TypeError):
+            config = ConfigParser(default_sections=('interactive',))
+            config = config['interactive']
+
+        self.pyspark_executable = pyspark_executable or config.get('pyspark-executable', fallback='pyspark')
+        self.python_interactive_driver = python_interactive_driver or config.get('python-interactive-driver',
+                                                                                 fallback=sys.executable)
+
+        # Force client deploy mode
+        self.deploy_mode = 'client'
+
+    def build_command(self, **kwargs):
+        kwargs.setdefault('executable', self.pyspark_executable)
+        return super(SparkInteractiveCommand, self).build_command(**kwargs)
+
+    def run(self):
+        self.logger.info('Executing Spark interactive...')
+
+        spark_command = self.build_command()
+
+        env = os.environ.copy()
+        env['PYSPARK_PYTHON'] = sys.executable
+        env['PYSPARK_DRIVER_PYTHON'] = self.python_interactive_driver
+
+        self.logger.info(env)
+
+        self.logger.info(' '.join(spark_command))
+        result = subprocess.check_call(spark_command,
+                                       stdout=sys.stdout,
+                                       stderr=sys.stderr,
+                                       stdin=sys.stdin,
+                                       env=env)
+        if result:
+            self.logger.error(f'Interactive Spark failed with error: {result}')
             raise RuntimeError()
