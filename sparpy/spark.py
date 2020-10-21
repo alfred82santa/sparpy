@@ -158,8 +158,6 @@ class SparkInteractiveCommand(BaseSparkCommand):
         env['PYSPARK_PYTHON'] = sys.executable
         env['PYSPARK_DRIVER_PYTHON'] = self.python_interactive_driver
 
-        self.logger.info(env)
-
         self.logger.info(' '.join(spark_command))
         result = subprocess.check_call(spark_command,
                                        stdout=sys.stdout,

@@ -147,6 +147,10 @@ def sparpy_submit(ctx,
                            convert_to_zip=True,
                            logger=logger)
 
+    reqs_paths = []
+    if reqs_path is None:
+        reqs_paths.append(reqs_path)
+
     spark_command = SparkSubmitCommand(config=config,
                                        spark_executable=spark_submit_executable,
                                        master=master,
@@ -155,7 +159,7 @@ def sparpy_submit(ctx,
                                        conf=conf,
                                        packages=packages,
                                        repositories=repositories,
-                                       reqs_paths=[reqs_path, ],
+                                       reqs_paths=reqs_paths,
                                        logger=logger)
 
     try:
@@ -217,10 +221,9 @@ def isparpy(ctx,
                            convert_to_zip=True,
                            logger=logger)
 
+    reqs_paths = []
     if reqs_path is None:
-        reqs_path = []
-    else:
-        reqs_path = [reqs_path, ]
+        reqs_paths.append(reqs_path)
 
     spark_command = SparkInteractiveCommand(config=config,
                                             pyspark_executable=pyspark_executable,
@@ -231,7 +234,7 @@ def isparpy(ctx,
                                             conf=conf,
                                             packages=packages,
                                             repositories=repositories,
-                                            reqs_paths=reqs_path,
+                                            reqs_paths=reqs_paths,
                                             logger=logger)
 
     try:
