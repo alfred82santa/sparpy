@@ -1,9 +1,25 @@
+from configparser import ConfigParser
 from functools import update_wrapper
 from pathlib import Path
 
 import click
 
-from sparpy.config import load_user_config
+from . import __version__
+from .config import load_user_config
+
+
+class EnvValues(click.types.StringParamType):
+    name = 'env_var=value'
+
+    def convert(self, value, param, ctx):
+        value = super(EnvValues, self).convert(value, param, ctx)
+        value = tuple(value.split('=', 1))
+        if len(value) == 1:
+            value = (value[0], '')
+        return value
+
+    def __repr__(self):
+        return "ENV_VAR=VALUE"
 
 
 def apply_decorators(func, *args):
@@ -55,7 +71,7 @@ def plugins_options(func=None):
                 '--no-self',
                 is_flag=True,
                 type=bool,
-                default=False,
+                default=None,
                 help='No include Sparpy itself as requirement'
             ),
             click.option(
@@ -64,6 +80,13 @@ def plugins_options(func=None):
                 type=bool,
                 default=None,
                 help='Avoid cache and download all packages'
+            ),
+            click.option(
+                '--pre',
+                is_flag=True,
+                type=bool,
+                default=None,
+                help='Include pre-release and development versions. By default, sparpy only finds stable versions.'
             ),
         )
 
@@ -108,6 +131,12 @@ def common_spark_options(func=None):
                 '--repositories',
                 type=str,
                 help='Comma-delimited list of Maven repositories'
+            ),
+            click.option(
+                '--env',
+                type=EnvValues(),
+                multiple=True,
+                help='Environment variables values'
             )
         )
 
@@ -165,6 +194,9 @@ class Config(click.ParamType):
         return self.convert(value, param, ctx)
 
     def convert(self, value, param, ctx):
+        if isinstance(value, ConfigParser):
+            return value
+
         if value:
             value = Path(value)
         return load_user_config(value)
@@ -177,6 +209,7 @@ def general_options(func=None):
             click.option(
                 '--config',
                 type=Config(),
+                default=load_user_config(),
                 help='Path to configuration file'
             ),
             click.option(
@@ -185,7 +218,8 @@ def general_options(func=None):
                 default=False,
                 is_flag=True,
                 help='Debug mode'
-            )
+            ),
+            click.version_option(version=__version__)
         )
 
     if func:

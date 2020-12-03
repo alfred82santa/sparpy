@@ -1,18 +1,18 @@
 import os
-import subprocess
 import sys
 from itertools import chain
 from logging import Logger, getLogger
 from pathlib import Path
-from typing import Iterable, Mapping, Union
+from typing import Dict, Iterable, Union
 
 from .config import ConfigParser
+from .processor import ProcessManager
 
 
 class BaseSparkCommand:
 
     def __init__(self,
-                 config: Mapping = None,
+                 config: ConfigParser = None,
                  spark_executable: str = None,
                  master: str = None,
                  deploy_mode: str = None,
@@ -21,21 +21,38 @@ class BaseSparkCommand:
                  packages: Union[Iterable[str], str] = None,
                  repositories: Union[Iterable[str], str] = None,
                  reqs_paths: Union[Iterable[str], str] = None,
+                 env: Dict[str, str] = None,
                  logger: Logger = None):
         try:
-            config = config['spark']
-        except (KeyError, TypeError):
-            config = ConfigParser(default_sections=('spark',))
-            config = config['spark']
+            cmd_config = config['spark']
+        except KeyError:
+            config.add_section('spark')
+            cmd_config = config['spark']
+        except TypeError:
+            config = ConfigParser(default_sections=('spark', 'spark_env'))
+            cmd_config = config['spark']
 
-        self.spark_executable = spark_executable or config.get('spark-executable', fallback='spark-submit')
-        self.master = master or config.get('master', fallback='local')
-        self.deploy_mode = deploy_mode or config.get('deploy-mode', fallback='client')
-        self.queue = queue or config.get('queue')
-        self.conf = config.getlist('conf', fallback=[])
-        self.packages = config.getlist('packages', fallback=[])
-        self.repositories = config.getlist('repositories', fallback=[])
-        self.reqs_paths = config.getlist('reqs_paths', fallback=[])
+        try:
+            env_config = config['spark-env']
+        except KeyError:
+            config.add_section('spark-env')
+            env_config = config['spark-env']
+
+        self.spark_executable = spark_executable or cmd_config.get('spark-executable', fallback='spark-submit')
+        self.master = master or cmd_config.get('master', fallback='local')
+        self.deploy_mode = deploy_mode or cmd_config.get('deploy-mode', fallback='client')
+        self.queue = queue or cmd_config.get('queue')
+        self.conf = cmd_config.getlist('conf', fallback=[])
+        self.packages = cmd_config.getlist('packages', fallback=[])
+        self.repositories = cmd_config.getlist('repositories', fallback=[])
+        self.reqs_paths = cmd_config.getlist('reqs_paths', fallback=[])
+
+        try:
+            self.env = {k: v for k, v in env_config.items()}
+        except KeyError:
+            self.env = {}
+
+        self.env.update(env or {})
 
         self.logger = logger or getLogger(__name__)
 
@@ -109,38 +126,39 @@ class SparkSubmitCommand(BaseSparkCommand):
         spark_command = self.build_command(job_args=job_args)
 
         env = os.environ.copy()
+        env.update(self.env or {})
         env['PYSPARK_PYTHON'] = sys.executable
         env['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
         self.logger.info(' '.join(spark_command))
-        result = subprocess.check_call(spark_command,
-                                       stdout=sys.stdout,
-                                       stderr=sys.stderr,
-                                       env=env)
-        if result:
-            self.logger.error(f'Spark job failed with error: {result}')
-            raise RuntimeError()
+
+        process = ProcessManager(spark_command, pass_through=True, env=env)
+        process.start_process()
+        process.wait()
+
+        if process.returncode != 0:
+            raise RuntimeError(f'Spark job failed with error: {process.returncode}')
 
 
 class SparkInteractiveCommand(BaseSparkCommand):
 
     def __init__(self,
-                 config,
+                 cmd_config,
                  *args,
                  pyspark_executable: str = None,
                  python_interactive_driver: str = None,
                  **kwargs):
-        super(SparkInteractiveCommand, self).__init__(config, *args, **kwargs)
+        super(SparkInteractiveCommand, self).__init__(cmd_config, *args, **kwargs)
 
         try:
-            config = config['interactive']
+            cmd_config = cmd_config['interactive']
         except (KeyError, TypeError):
-            config = ConfigParser(default_sections=('interactive',))
-            config = config['interactive']
+            cmd_config = ConfigParser(default_sections=('interactive',))
+            cmd_config = cmd_config['interactive']
 
-        self.pyspark_executable = pyspark_executable or config.get('pyspark-executable', fallback='pyspark')
-        self.python_interactive_driver = python_interactive_driver or config.get('python-interactive-driver',
-                                                                                 fallback=sys.executable)
+        self.pyspark_executable = pyspark_executable or cmd_config.get('pyspark-executable', fallback='pyspark')
+        self.python_interactive_driver = python_interactive_driver or cmd_config.get('python-interactive-driver',
+                                                                                     fallback=sys.executable)
 
         # Force client deploy mode
         self.deploy_mode = 'client'
@@ -150,20 +168,21 @@ class SparkInteractiveCommand(BaseSparkCommand):
         return super(SparkInteractiveCommand, self).build_command(**kwargs)
 
     def run(self):
+
         self.logger.info('Executing Spark interactive...')
 
         spark_command = self.build_command()
 
         env = os.environ.copy()
+        env.update(self.env)
         env['PYSPARK_PYTHON'] = sys.executable
         env['PYSPARK_DRIVER_PYTHON'] = self.python_interactive_driver
 
         self.logger.info(' '.join(spark_command))
-        result = subprocess.check_call(spark_command,
-                                       stdout=sys.stdout,
-                                       stderr=sys.stderr,
-                                       stdin=sys.stdin,
-                                       env=env)
-        if result:
-            self.logger.error(f'Interactive Spark failed with error: {result}')
-            raise RuntimeError()
+
+        process = ProcessManager(spark_command, pass_through=True, env=env)
+        process.start_process()
+        process.wait()
+
+        if process.returncode != 0:
+            raise RuntimeError(f'Interactive Spark failed with error: {process.returncode}')

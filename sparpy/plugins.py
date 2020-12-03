@@ -1,22 +1,21 @@
-import subprocess
 import sys
 from itertools import chain
 from logging import Logger, getLogger
 from pathlib import Path
 from pkgutil import iter_modules
-from subprocess import DEVNULL
 from tempfile import mkdtemp
 from typing import Iterable
 from urllib.parse import urlparse
 from zipimport import zipimporter
 
-from click import Group
+import click
 from pkg_resources import find_distributions, iter_entry_points, working_set
 
-from sparpy.config import ConfigParser
+from .config import ConfigParser
+from .processor import ProcessManager
 
 
-class DynamicGroup(Group):
+class DynamicGroup(click.Group):
     PLUGINS_ENTRY_POINT = 'sparpy.cli_plugins'
 
     def __init__(self, *args, **kwargs):
@@ -44,7 +43,21 @@ class DynamicGroup(Group):
         except IndexError:
             return None
 
-        return plugin.load()
+        command = plugin.resolve()
+
+        if isinstance(command, click.BaseCommand):
+            return command
+
+        @click.command(name=name, context_settings={'ignore_unknown_options': True})
+        @click.argument(
+            'job_args',
+            nargs=-1,
+            type=click.UNPROCESSED
+        )
+        def wrapper(job_args):
+            ctx.exit(command(job_args))
+
+        return wrapper
 
 
 def ensure_plugin_distribution():
@@ -56,7 +69,7 @@ def ensure_plugin_distribution():
             working_set.add(dist)
 
 
-def convert_to_zip(f: Path):
+def _convert_to_zip(f: Path):
     new_path = f.with_suffix('.zip')
     f.rename(new_path)
     return new_path
@@ -73,6 +86,7 @@ class DownloadPlugins:
                  no_index: bool = None,
                  no_self: bool = None,
                  force_download: bool = None,
+                 pre: bool = None,
                  logger: Logger = None,
                  download_dir: str = None,
                  convert_to_zip: bool = True):
@@ -96,6 +110,7 @@ class DownloadPlugins:
 
         self.no_self = config.getboolean('no-self', fallback=False)
         self.force_download = config.getboolean('force-download', fallback=False)
+        self.pre = config.getboolean('pre', fallback=False)
 
         if plugins:
             self.plugins.extend(plugins)
@@ -118,6 +133,9 @@ class DownloadPlugins:
         if force_download is not None:
             self.force_download = force_download
 
+        if pre is not None:
+            self.pre = pre
+
         if download_dir:
             self.reqs_path = download_dir
         else:
@@ -134,13 +152,16 @@ class DownloadPlugins:
         elif self.cache_dir:
             pip_exec_params.extend(['--cache-dir', str(self.cache_dir)])
 
-        pip_exec_params.extend(chain(*[['--extra-index-url',
-                                        u,
-                                        '--trusted-host',
-                                        urlparse(u).hostname]
-                                       for u in self.extra_index_urls]))
+        if self.pre:
+            pip_exec_params.append('--pre')
 
-        pip_exec_params.extend(chain(*[['--find-links', str(r)] for r in self.find_links]))
+        pip_exec_params.extend(chain.from_iterable([['--extra-index-url',
+                                                     u,
+                                                     '--trusted-host',
+                                                     urlparse(u).hostname]
+                                                    for u in self.extra_index_urls]))
+
+        pip_exec_params.extend(chain.from_iterable([['--find-links', str(r)] for r in self.find_links]))
         if self.no_index:
             pip_exec_params.append('--no-index')
 
@@ -148,9 +169,9 @@ class DownloadPlugins:
             from . import __version__
             pip_exec_params.append(f'sparpy=={__version__}')
         if len(self.plugins):
-            pip_exec_params.extend(chain(*[p.split(',') if ',' in p else [p, ] for p in self.plugins]))
+            pip_exec_params.extend(chain.from_iterable([p.split(',') if ',' in p else [p, ] for p in self.plugins]))
         if len(self.requirements_files):
-            pip_exec_params.extend(chain(*[['-r', str(r)] for r in self.requirements_files]))
+            pip_exec_params.extend(chain.from_iterable([['-r', str(r)] for r in self.requirements_files]))
 
         pip_exec_params.extend(['--exists-action', 'i'])
 
@@ -164,14 +185,16 @@ class DownloadPlugins:
 
         self.logger.info('Downloading python plugins...')
         self.logger.debug(' '.join(pip_exec_params))
-        params = {'stdout': DEVNULL, 'stderr': DEVNULL}
-        if debug:
-            params = {'stdout': sys.stdout, 'stderr': sys.stderr}
 
-        subprocess.check_call(pip_exec_params, **params)
+        process = ProcessManager(pip_exec_params, pass_through=debug)
+        process.start_process()
+        process.wait()
+
+        if process.returncode != 0:
+            raise RuntimeError('Download packages failed')
 
         if self.convert_to_zip:
-            [convert_to_zip(p.resolve())
+            [_convert_to_zip(p.resolve())
              for p in Path(self.reqs_path).glob('*.whl')
              if p.is_file()]
 
