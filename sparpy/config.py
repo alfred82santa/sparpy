@@ -36,3 +36,5 @@ class ConfigParser(BaseConfigParser):
             for section in default_sections:
                 if not self.has_section(section):
                     self.add_section(section)
+
+        self.optionxform = lambda option: option

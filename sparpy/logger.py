@@ -1,7 +1,7 @@
 import sys
 from logging import DEBUG, INFO, StreamHandler, getLogger
 
-from sparpy.config import ConfigParser
+from .config import ConfigParser
 
 
 def build_logger(config, debug=False):

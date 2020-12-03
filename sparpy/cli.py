@@ -3,12 +3,12 @@ from shutil import rmtree
 
 import click
 
-from sparpy.cli_options import (common_spark_options, general_options,
-                                plugins_options, spark_interactive_options,
-                                spark_submit_options)
-from sparpy.logger import build_logger
-from sparpy.plugins import DownloadPlugins, DynamicGroup
-from sparpy.spark import SparkInteractiveCommand, SparkSubmitCommand
+from .cli_options import (common_spark_options, general_options,
+                          plugins_options, spark_interactive_options,
+                          spark_submit_options)
+from .logger import build_logger
+from .plugins import DownloadPlugins, DynamicGroup
+from .spark import SparkInteractiveCommand, SparkSubmitCommand
 
 
 @click.group(cls=DynamicGroup)
@@ -20,7 +20,7 @@ def run_sparpy_runner():
     sparpy_runner(obj={})
 
 
-@click.command(name='sparpy', context_settings=dict(ignore_unknown_options=True))
+@click.command(name='sparpy', context_settings={'ignore_unknown_options': True})
 @general_options
 @plugins_options
 @common_spark_options
@@ -45,7 +45,7 @@ def run_sparpy():
     sparpy(obj={})
 
 
-@click.command(name='sparpy-download', context_settings=dict(ignore_unknown_options=True))
+@click.command(name='sparpy-download')
 @general_options
 @plugins_options
 @click.option('--convert-to-zip', '-z',
@@ -57,7 +57,9 @@ def run_sparpy():
               type=click.Path(file_okay=False, writable=True, resolve_path=True),
               required=False,
               help='Directory where to download packages. If it is not provided a temporal directory will be created.')
-def sparpy_download(config,
+@click.pass_context
+def sparpy_download(ctx,
+                    config,
                     debug,
                     # Plugin options
                     plugin,
@@ -67,6 +69,7 @@ def sparpy_download(config,
                     no_index,
                     no_self,
                     force_download,
+                    pre,
                     # Output
                     convert_to_zip,
                     output_dir,
@@ -78,17 +81,23 @@ def sparpy_download(config,
 
     logger = logger or build_logger(config, debug)
 
-    reqs_path = DownloadPlugins(config=config,
-                                plugins=plugin,
-                                requirements_files=requirements_file,
-                                extra_index_urls=extra_index_url,
-                                find_links=find_links,
-                                no_index=no_index,
-                                no_self=no_self,
-                                force_download=force_download,
-                                logger=logger,
-                                convert_to_zip=convert_to_zip,
-                                download_dir=output_dir).download(debug=debug)
+    download_command = DownloadPlugins(config=config,
+                                       plugins=plugin,
+                                       requirements_files=requirements_file,
+                                       extra_index_urls=extra_index_url,
+                                       find_links=find_links,
+                                       no_index=no_index,
+                                       no_self=no_self,
+                                       force_download=force_download,
+                                       pre=pre,
+                                       logger=logger,
+                                       convert_to_zip=convert_to_zip,
+                                       download_dir=output_dir)
+    try:
+        reqs_path = download_command.download(debug=debug)
+    except RuntimeError as ex:
+        click.echo(ex)
+        raise ctx.exit(-1)
 
     click.echo(f'Packages directory: {reqs_path}')
     return reqs_path
@@ -98,7 +107,7 @@ def run_sparpy_download():
     sparpy_download(obj={})
 
 
-@click.command(name='sparpy-submit', context_settings=dict(ignore_unknown_options=True))
+@click.command(name='sparpy-submit', context_settings={'ignore_unknown_options': True})
 @general_options
 @plugins_options
 @common_spark_options
@@ -115,6 +124,7 @@ def sparpy_submit(ctx,
                   no_index,
                   no_self,
                   force_download,
+                  pre,
                   # Spark submit options
                   spark_submit_executable,
                   # Common Spark options
@@ -124,6 +134,7 @@ def sparpy_submit(ctx,
                   conf,
                   packages,
                   repositories,
+                  env,
                   # Job arguments
                   job_args,
                   *,
@@ -144,6 +155,7 @@ def sparpy_submit(ctx,
                            no_index=no_index,
                            no_self=no_self,
                            force_download=force_download,
+                           pre=pre,
                            convert_to_zip=True,
                            logger=logger)
 
@@ -160,10 +172,14 @@ def sparpy_submit(ctx,
                                        packages=packages,
                                        repositories=repositories,
                                        reqs_paths=reqs_paths,
+                                       env=dict(env or {}),
                                        logger=logger)
 
     try:
         spark_command.run(job_args=job_args)
+    except RuntimeError as ex:
+        click.echo(ex)
+        raise ctx.exit(-1)
     finally:
         if reqs_path:
             rmtree(reqs_path)
@@ -190,6 +206,7 @@ def isparpy(ctx,
             no_index,
             no_self,
             force_download,
+            pre,
             # Spark interactive options
             pyspark_executable,
             python_interactive_driver,
@@ -200,6 +217,7 @@ def isparpy(ctx,
             conf,
             packages,
             repositories,
+            env,
             *,
             logger=None):
     """
@@ -218,6 +236,7 @@ def isparpy(ctx,
                            no_index=no_index,
                            no_self=no_self,
                            force_download=force_download,
+                           pre=pre,
                            convert_to_zip=True,
                            logger=logger)
 
@@ -225,7 +244,7 @@ def isparpy(ctx,
     if reqs_path is not None:
         reqs_paths.append(reqs_path)
 
-    spark_command = SparkInteractiveCommand(config=config,
+    spark_command = SparkInteractiveCommand(cmd_config=config,
                                             pyspark_executable=pyspark_executable,
                                             python_interactive_driver=python_interactive_driver,
                                             master=master,
@@ -235,10 +254,14 @@ def isparpy(ctx,
                                             packages=packages,
                                             repositories=repositories,
                                             reqs_paths=reqs_paths,
+                                            env=dict(env or {}),
                                             logger=logger)
 
     try:
         spark_command.run()
+    except RuntimeError as ex:
+        click.echo(ex)
+        raise ctx.exit(-1)
     finally:
         if reqs_path:
             rmtree(reqs_path)

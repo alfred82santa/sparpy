@@ -7,6 +7,24 @@ Changelog
 ---------
 
 ......
+v0.4.0
+......
+
+* Added `--pre` option in order to allow pre-release packages.
+* Added `--env` option in order to set environment variables for spark process.
+* Added `spark-env` config section in order to set environment variables for spark process.
+* Write pip output when it fails.
+* Fixed problems with interactive sparpy.
+* Fixed `no-self` option in config file.
+
+* Allow to use plugins that don't use `click`. They must be callable with one argument of type `Sequence[str]`
+  in order to pass arguments to it.
+
+* Added `--version` option in order to print sparpy version.
+* Fixed error when a plugin requires a package which is already installed but version does not satisfy requirement.
+* `Sparpy` does not print error traceback when subprocess fails.
+
+......
 v0.3.0
 ......
 
@@ -114,6 +132,10 @@ Format:
     reqs_paths=
         /path/to/dir/with/python/packages_1
         /path/to/dir/with/python/packages_2
+
+    [spark-env]
+
+    MY_ENV_VAR=value
 
     [plugins]
 
