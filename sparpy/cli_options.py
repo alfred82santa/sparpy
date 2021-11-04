@@ -137,7 +137,20 @@ def common_spark_options(func=None):
                 type=EnvValues(),
                 multiple=True,
                 help='Environment variables values'
-            )
+            ),
+            click.option(
+                '--properties-file',
+                type=str,
+                multiple=True,
+                help="Path to a file from which to load extra properties. If not"
+                     "specified, this will look for conf/spark-defaults.conf."
+            ),
+            click.option(
+                '--klass', '--class',
+                type=str,
+                multiple=True,
+                help='Your application\'s main class (for Java / Scala apps).'
+            ),
         )
 
     if func:

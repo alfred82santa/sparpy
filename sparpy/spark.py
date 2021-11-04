@@ -22,6 +22,8 @@ class BaseSparkCommand:
                  repositories: Union[Iterable[str], str] = None,
                  reqs_paths: Union[Iterable[str], str] = None,
                  env: Dict[str, str] = None,
+                 properties_file: str = None,
+                 klass: str = None,
                  logger: Logger = None):
         try:
             cmd_config = config['spark']
@@ -46,6 +48,9 @@ class BaseSparkCommand:
         self.packages = cmd_config.getlist('packages', fallback=[])
         self.repositories = cmd_config.getlist('repositories', fallback=[])
         self.reqs_paths = cmd_config.getlist('reqs_paths', fallback=[])
+
+        self.property_file = properties_file or cmd_config.get('property-file')
+        self.klass = klass or cmd_config.get('class')
 
         try:
             self.env = {k: v for k, v in env_config.items()}
@@ -98,6 +103,12 @@ class BaseSparkCommand:
         if self.repositories:
             spark_cmd.extend(['--repositories', ','.join(self.repositories)])
 
+        if self.property_file:
+            spark_cmd.extend(['--property-file', self.property_file])
+
+        if self.klass:
+            spark_cmd.extend(['--class', self.klass])
+
         if self.reqs_paths:
             ps = [r.strip() for r in chain(*[[str(p.resolve())
                                               for p in chain(Path(rp).rglob('*.egg'),
@@ -126,9 +137,11 @@ class SparkSubmitCommand(BaseSparkCommand):
         spark_command = self.build_command(job_args=job_args)
 
         env = os.environ.copy()
-        env.update(self.env or {})
+
         env['PYSPARK_PYTHON'] = sys.executable
         env['PYSPARK_DRIVER_PYTHON'] = sys.executable
+
+        env.update(self.env or {})
 
         self.logger.info(' '.join(spark_command))
 
@@ -174,9 +187,11 @@ class SparkInteractiveCommand(BaseSparkCommand):
         spark_command = self.build_command()
 
         env = os.environ.copy()
-        env.update(self.env)
+
         env['PYSPARK_PYTHON'] = sys.executable
         env['PYSPARK_DRIVER_PYTHON'] = self.python_interactive_driver
+
+        env.update(self.env)
 
         self.logger.info(' '.join(spark_command))
 

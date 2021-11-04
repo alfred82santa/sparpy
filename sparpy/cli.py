@@ -135,6 +135,8 @@ def sparpy_submit(ctx,
                   packages,
                   repositories,
                   env,
+                  properties_file,
+                  klass,
                   # Job arguments
                   job_args,
                   *,
@@ -144,6 +146,37 @@ def sparpy_submit(ctx,
     """
 
     logger = logger or build_logger(config, debug)
+
+    if conf:
+        sparpy_conf = [tuple(k.split('=')) for k in conf if k.startswith('sparpy.')]
+        conf = [k for k in conf if not k.startswith('sparpy.')]
+        if len(sparpy_conf):
+            plugin = [*plugin, *[v for k, v in sparpy_conf if k == 'sparpy.plugins']]
+            requirements_file = [*requirements_file, *[v for k, v in sparpy_conf if k == 'sparpy.requirements-file']]
+            extra_index_url = [*extra_index_url, *[v for k, v in sparpy_conf if k == 'sparpy.extra-index-url']]
+            find_links = [*find_links, *[v for k, v in sparpy_conf if k == 'sparpy.find-links']]
+
+            try:
+                no_index = [v for k, v in sparpy_conf if k == 'sparpy.no-index'][0].lower() not in ['true', '1']
+            except (IndexError, AttributeError):
+                pass
+
+            try:
+                no_self = [v for k, v in sparpy_conf if k == 'sparpy.no-self'][0].lower() not in ['true', '1']
+            except (IndexError, AttributeError):
+                pass
+
+            try:
+                force_download = [v for k, v in sparpy_conf
+                                  if k == 'sparpy.force-download'][0].lower() not in ['true', '1']
+            except (IndexError, AttributeError):
+                pass
+
+            try:
+                pre = [v for k, v in sparpy_conf
+                       if k == 'sparpy.pre-releases'][0].lower() not in ['true', '1']
+            except (IndexError, AttributeError):
+                pass
 
     reqs_path = ctx.invoke(sparpy_download,
                            config=config,
@@ -173,6 +206,8 @@ def sparpy_submit(ctx,
                                        repositories=repositories,
                                        reqs_paths=reqs_paths,
                                        env=dict(env or {}),
+                                       properties_file=properties_file,
+                                       klass=klass,
                                        logger=logger)
 
     try:

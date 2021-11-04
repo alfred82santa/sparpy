@@ -7,6 +7,16 @@ Changelog
 ---------
 
 ......
+v0.4.1
+......
+
+* Support to set pip options as configuration using `--conf sparpy.config-key=value` in order to allow to
+  use `sparpy-submit` in EMR-on-EKS images.
+
+* Allows `--class` in order to allow to use `sparpy-submit` in EMR-on-EKS images.
+* Allows `--property-file` in order to allow to use `sparpy-submit` in EMR-on-EKS images.
+
+......
 v0.4.0
 ......
 
