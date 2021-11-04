@@ -155,7 +155,6 @@ def common_spark_options(func=None):
             click.option(
                 '--properties-file',
                 type=str,
-                multiple=True,
                 envvar='SPARPY_PROPERTIES_FILE',
                 help="Path to a file from which to load extra properties. If not"
                      "specified, this will look for conf/spark-defaults.conf."
@@ -163,7 +162,6 @@ def common_spark_options(func=None):
             click.option(
                 '--klass', '--class',
                 type=str,
-                multiple=True,
                 envvar='SPARPY_CLASS',
                 help='Your application\'s main class (for Java / Scala apps).'
             ),

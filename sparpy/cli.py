@@ -221,7 +221,7 @@ def sparpy_submit(ctx,
 
 
 def run_sparpy_submit():
-    sparpy(obj={})
+    sparpy_submit(obj={})
 
 
 @click.command(name='isparpy')

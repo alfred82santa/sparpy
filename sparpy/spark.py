@@ -104,7 +104,7 @@ class BaseSparkCommand:
             spark_cmd.extend(['--repositories', ','.join(self.repositories)])
 
         if self.property_file:
-            spark_cmd.extend(['--property-file', self.property_file])
+            spark_cmd.extend(['--properties-file', self.property_file])
 
         if self.klass:
             spark_cmd.extend(['--class', self.klass])
