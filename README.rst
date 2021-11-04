@@ -7,6 +7,14 @@ Changelog
 ---------
 
 ......
+v0.4.3
+......
+
+* Fix sparpy-submit entrypoint.
+* Fix `--property-file` option.
+* Fix `--class` option.
+
+......
 v0.4.2
 ......
 
