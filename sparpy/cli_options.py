@@ -38,12 +38,14 @@ def plugins_options(func=None):
                 '--plugin', '-p',
                 type=str,
                 multiple=True,
+                envvar='SPARPY_PLUGINS',
                 help='Download plugin'
             ),
             click.option(
                 '--requirements-file', '-r',
                 type=click.Path(),
                 multiple=True,
+                envvar='SPARPY_REQUIREMENT_FILES',
                 help='Plugins requirements file'
             ),
             click.option(
@@ -51,18 +53,21 @@ def plugins_options(func=None):
                 is_flag=True,
                 type=bool,
                 default=None,
+                envvar='SPARPY_NO_INDEX',
                 help='Ignore package index (only looking at --find-links URLs instead).'
             ),
             click.option(
                 '--extra-index-url', '-e',
                 type=str,
                 multiple=True,
+                envvar='SPARPY_EXTRA_INDEX_URLS',
                 help='Extra repository url'
             ),
             click.option(
                 '--find-links', '-f',
                 type=str,
                 multiple=True,
+                envvar='SPARPY_FIND_LINKS',
                 help='If a URL or path to an html file, then parse for links to archives such as sdist (.tar.gz)'
                      ' or wheel (.whl) files. If a local path or file:// URL that\'s a directory,  then look for'
                      ' archives in the directory listing. Links to VCS project URLs are not supported.'
@@ -72,6 +77,7 @@ def plugins_options(func=None):
                 is_flag=True,
                 type=bool,
                 default=None,
+                envvar='SPARPY_NO_SELF',
                 help='No include Sparpy itself as requirement'
             ),
             click.option(
@@ -79,6 +85,7 @@ def plugins_options(func=None):
                 is_flag=True,
                 type=bool,
                 default=None,
+                envvar='SPARPY_FORCE_DOWNLOAD',
                 help='Avoid cache and download all packages'
             ),
             click.option(
@@ -86,6 +93,7 @@ def plugins_options(func=None):
                 is_flag=True,
                 type=bool,
                 default=None,
+                envvar='SPARPY_PRE_RELEASES',
                 help='Include pre-release and development versions. By default, sparpy only finds stable versions.'
             ),
         )
@@ -102,34 +110,40 @@ def common_spark_options(func=None):
             click.option(
                 '--master',
                 type=str,
+                envvar='SPARPY_MASTER',
                 help='The master URL for the cluster'
             ),
             click.option(
                 '--deploy-mode',
                 type=str,
+                envvar='SPARPY_DEPLOY_MODE',
                 help='Whether to deploy your driver on the worker nodes (cluster) '
                      'or locally as an external client (client)'
             ),
             click.option(
                 '--queue',
                 type=str,
+                envvar='SPARPY_QUEUE',
                 help='The name of the YARN queue to which the application is submitted.'
             ),
             click.option(
                 '--conf',
                 type=str,
                 multiple=True,
+                envvar='SPARPY_CONF',
                 help='Arbitrary Spark configuration property in key=value format. '
                      'For values that contain spaces wrap “key=value” in quotes.'
             ),
             click.option(
                 '--packages',
                 type=str,
+                envvar='SPARPY_PACKAGES',
                 help='Comma-delimited list of Maven coordinates'
             ),
             click.option(
                 '--repositories',
                 type=str,
+                envvar='SPARPY_REPOSITORIES',
                 help='Comma-delimited list of Maven repositories'
             ),
             click.option(
@@ -142,6 +156,7 @@ def common_spark_options(func=None):
                 '--properties-file',
                 type=str,
                 multiple=True,
+                envvar='SPARPY_PROPERTIES_FILE',
                 help="Path to a file from which to load extra properties. If not"
                      "specified, this will look for conf/spark-defaults.conf."
             ),
@@ -149,6 +164,7 @@ def common_spark_options(func=None):
                 '--klass', '--class',
                 type=str,
                 multiple=True,
+                envvar='SPARPY_CLASS',
                 help='Your application\'s main class (for Java / Scala apps).'
             ),
         )
