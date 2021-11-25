@@ -41,8 +41,8 @@ class BaseSparkCommand:
             env_config = config['spark-env']
 
         self.spark_executable = spark_executable or cmd_config.get('spark-executable', fallback='spark-submit')
-        self.master = master or cmd_config.get('master', fallback='local')
-        self.deploy_mode = deploy_mode or cmd_config.get('deploy-mode', fallback='client')
+        self.master = master or cmd_config.get('master')
+        self.deploy_mode = deploy_mode or cmd_config.get('deploy-mode')
         self.queue = queue or cmd_config.get('queue')
         self.conf = cmd_config.getlist('conf', fallback=[])
         self.packages = cmd_config.getlist('packages', fallback=[])
@@ -89,7 +89,12 @@ class BaseSparkCommand:
                 self.reqs_paths.extend(reqs_paths)
 
     def build_command(self, *, executable):
-        spark_cmd = [executable, '--master', self.master, '--deploy-mode', self.deploy_mode]
+        spark_cmd = [executable, ]
+        if self.master:
+            spark_cmd.extend(['--master', self.master])
+
+        if self.deploy_mode:
+            spark_cmd.extend(['--deploy-mode', self.deploy_mode])
 
         if self.queue:
             spark_cmd.extend(['--queue', self.queue])
