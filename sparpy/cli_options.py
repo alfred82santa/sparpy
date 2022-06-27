@@ -49,6 +49,13 @@ def plugins_options(func=None):
                 help='Plugins requirements file'
             ),
             click.option(
+                '--constraint', '-c',
+                type=click.Path(),
+                multiple=True,
+                envvar='SPARPY_CONSTRAINTS',
+                help='Package constraints'
+            ),
+            click.option(
                 '--no-index',
                 is_flag=True,
                 type=bool,

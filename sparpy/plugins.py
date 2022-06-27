@@ -81,6 +81,7 @@ class DownloadPlugins:
                  config=None,
                  plugins: Iterable[str] = None,
                  requirements_files: Iterable[str] = None,
+                 constraints: Iterable[str] = None,
                  extra_index_urls: Iterable[str] = None,
                  find_links: Iterable[str] = None,
                  no_index: bool = None,
@@ -105,6 +106,7 @@ class DownloadPlugins:
 
         self.plugins = config.getlist('plugins', fallback=[])
         self.requirements_files = config.getpathlist('requirements-files', fallback=[])
+        self.constraints = config.getpathlist('constraints', fallback=[])
 
         self.download_dir_prefix = config.get('download-dir-prefix', fallback='sparpy_')
 
@@ -117,6 +119,9 @@ class DownloadPlugins:
 
         if requirements_files:
             self.requirements_files.extend([Path(p) for p in requirements_files])
+
+        if constraints:
+            self.constraints.extend([Path(p) for p in constraints])
 
         if extra_index_urls:
             self.extra_index_urls.extend(extra_index_urls)
@@ -172,6 +177,8 @@ class DownloadPlugins:
             pip_exec_params.extend(chain.from_iterable([p.split(',') if ',' in p else [p, ] for p in self.plugins]))
         if len(self.requirements_files):
             pip_exec_params.extend(chain.from_iterable([['-r', str(r)] for r in self.requirements_files]))
+        if len(self.constraints):
+            pip_exec_params.extend(chain.from_iterable([['-c', str(c)] for c in self.constraints]))
 
         pip_exec_params.extend(['--exists-action', 'i'])
 
