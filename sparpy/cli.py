@@ -64,6 +64,7 @@ def sparpy_download(ctx,
                     # Plugin options
                     plugin,
                     requirements_file,
+                    constraint,
                     extra_index_url,
                     find_links,
                     no_index,
@@ -84,6 +85,7 @@ def sparpy_download(ctx,
     download_command = DownloadPlugins(config=config,
                                        plugins=plugin,
                                        requirements_files=requirements_file,
+                                       constraints=constraint,
                                        extra_index_urls=extra_index_url,
                                        find_links=find_links,
                                        no_index=no_index,
@@ -119,6 +121,7 @@ def sparpy_submit(ctx,
                   # Plugin options
                   plugin,
                   requirements_file,
+                  constraint,
                   extra_index_url,
                   find_links,
                   no_index,
@@ -153,6 +156,7 @@ def sparpy_submit(ctx,
         if len(sparpy_conf):
             plugin = [*plugin, *[v for k, v in sparpy_conf if k == 'sparpy.plugins']]
             requirements_file = [*requirements_file, *[v for k, v in sparpy_conf if k == 'sparpy.requirements-file']]
+            constraint = [*constraint, *[v for k, v in sparpy_conf if k == 'sparpy.constraints']]
             extra_index_url = [*extra_index_url, *[v for k, v in sparpy_conf if k == 'sparpy.extra-index-url']]
             find_links = [*find_links, *[v for k, v in sparpy_conf if k == 'sparpy.find-links']]
 
@@ -183,6 +187,7 @@ def sparpy_submit(ctx,
                            debug=debug,
                            plugin=plugin,
                            requirements_file=requirements_file,
+                           constraint=constraint,
                            extra_index_url=extra_index_url,
                            find_links=find_links,
                            no_index=no_index,
@@ -236,6 +241,7 @@ def isparpy(ctx,
             # Plugin options
             plugin,
             requirements_file,
+            constraint,
             extra_index_url,
             find_links,
             no_index,
@@ -254,7 +260,8 @@ def isparpy(ctx,
             repositories,
             env,
             *,
-            logger=None):
+            logger=None,
+            **kwargs):
     """
     Start a pyspark interactive session with dependencies loaded
     """
@@ -266,6 +273,7 @@ def isparpy(ctx,
                            config=config,
                            plugin=plugin,
                            requirements_file=requirements_file,
+                           constraint=constraint,
                            extra_index_url=extra_index_url,
                            find_links=find_links,
                            no_index=no_index,

@@ -6,6 +6,15 @@ Sparpy: An Spark entry point for python
 Changelog
 ---------
 
+
+......
+v0.4.5
+......
+
+* Fix isparpy entrypoint. Allows `--class` parameter.
+* Allow to set constraints files.
+
+
 ......
 v0.4.4
 ......
