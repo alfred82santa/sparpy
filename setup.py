@@ -43,26 +43,20 @@ with Path(Path(__file__).parent, 'README.rst').open(encoding='utf-8') as f:
 
 setup(
     name='sparpy',
-
     version=version,
-
     description='An Spark entry point for python',
     long_description=long_description,
-
     url='https://github.com/alfred82santa/sparpy',
-
     author='Alfred Santacatalina',
-
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-
     packages=find_packages(exclude=['tests'], include=['sparpy*']),
-
     install_requires=requirements,
+    extras_require={'base': ['pkginfo']},
     zip_safe=False,
     entry_points={
         'console_scripts': [

@@ -19,6 +19,7 @@ class BaseSparkCommand:
                  queue: str = None,
                  conf: Iterable[str] = None,
                  packages: Union[Iterable[str], str] = None,
+                 exclude_packages: Union[Iterable[str], str] = None,
                  repositories: Union[Iterable[str], str] = None,
                  reqs_paths: Union[Iterable[str], str] = None,
                  env: Dict[str, str] = None,
@@ -46,6 +47,7 @@ class BaseSparkCommand:
         self.queue = queue or cmd_config.get('queue')
         self.conf = cmd_config.getlist('conf', fallback=[])
         self.packages = cmd_config.getlist('packages', fallback=[])
+        self.exclude_packages = cmd_config.getlist('exclude-packages', fallback=[])
         self.repositories = cmd_config.getlist('repositories', fallback=[])
         self.reqs_paths = cmd_config.getlist('reqs_paths', fallback=[])
 
@@ -71,6 +73,14 @@ class BaseSparkCommand:
             packages = [p.strip() for p in packages if p.strip()]
             if packages:
                 self.packages.extend(packages)
+
+        if exclude_packages:
+            if isinstance(exclude_packages, str):
+                exclude_packages = exclude_packages.split(',')
+
+            exclude_packages = [p.strip() for p in exclude_packages if p.strip()]
+            if packages:
+                self.exclude_packages.extend(exclude_packages)
 
         if repositories:
             if isinstance(repositories, str):
@@ -104,6 +114,9 @@ class BaseSparkCommand:
 
         if self.packages:
             spark_cmd.extend(['--packages', ','.join(self.packages)])
+
+        if self.exclude_packages:
+            spark_cmd.extend(['--exclude-packages', ','.join(self.exclude_packages)])
 
         if self.repositories:
             spark_cmd.extend(['--repositories', ','.join(self.repositories)])

@@ -56,6 +56,13 @@ def plugins_options(func=None):
                 help='Package constraints'
             ),
             click.option(
+                '--exclude-python-package', '-x',
+                type=click.Path(),
+                multiple=True,
+                envvar='SPARPY_EXCLUDE_PYTHON_PACKAGES',
+                help='Exclude Python packages'
+            ),
+            click.option(
                 '--no-index',
                 is_flag=True,
                 type=bool,
@@ -145,6 +152,12 @@ def common_spark_options(func=None):
                 '--packages',
                 type=str,
                 envvar='SPARPY_PACKAGES',
+                help='Comma-delimited list of Maven coordinates'
+            ),
+            click.option(
+                '--exclude-packages',
+                type=str,
+                envvar='SPARPY_EXCLUDE_PACKAGES',
                 help='Comma-delimited list of Maven coordinates'
             ),
             click.option(
