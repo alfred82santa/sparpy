@@ -1,3 +1,4 @@
+import re
 import sys
 from itertools import chain
 from logging import Logger, getLogger
@@ -13,6 +14,8 @@ from pkg_resources import find_distributions, iter_entry_points, working_set
 
 from .config import ConfigParser
 from .processor import ProcessManager
+
+PLUGIN_REGEX = re.compile(r'([^[,]+(?:\[[^]]+])?)')
 
 
 class DynamicGroup(click.Group):
@@ -82,6 +85,7 @@ class DownloadPlugins:
                  plugins: Iterable[str] = None,
                  requirements_files: Iterable[str] = None,
                  constraints: Iterable[str] = None,
+                 exclude_packages: Iterable[str] = None,
                  extra_index_urls: Iterable[str] = None,
                  find_links: Iterable[str] = None,
                  no_index: bool = None,
@@ -107,6 +111,7 @@ class DownloadPlugins:
         self.plugins = config.getlist('plugins', fallback=[])
         self.requirements_files = config.getpathlist('requirements-files', fallback=[])
         self.constraints = config.getpathlist('constraints', fallback=[])
+        self.exclude_packages = config.getlist('exclude-packages', fallback=[])
 
         self.download_dir_prefix = config.get('download-dir-prefix', fallback='sparpy_')
 
@@ -122,6 +127,9 @@ class DownloadPlugins:
 
         if constraints:
             self.constraints.extend([Path(p) for p in constraints])
+
+        if exclude_packages:
+            self.exclude_packages.extend(exclude_packages)
 
         if extra_index_urls:
             self.extra_index_urls.extend(extra_index_urls)
@@ -174,7 +182,8 @@ class DownloadPlugins:
             from . import __version__
             pip_exec_params.append(f'sparpy=={__version__}')
         if len(self.plugins):
-            pip_exec_params.extend(chain.from_iterable([p.split(',') if ',' in p else [p, ] for p in self.plugins]))
+            pip_exec_params.extend(chain.from_iterable([PLUGIN_REGEX.findall(p)
+                                                        if ',' in p else [p, ] for p in self.plugins]))
         if len(self.requirements_files):
             pip_exec_params.extend(chain.from_iterable([['-r', str(r)] for r in self.requirements_files]))
         if len(self.constraints):
@@ -200,9 +209,22 @@ class DownloadPlugins:
         if process.returncode != 0:
             raise RuntimeError('Download packages failed')
 
+        [p.unlink()
+         for p in Path(self.reqs_path).glob('*.whl')
+         if p.is_file() and self.is_exclude(p)]
+
         if self.convert_to_zip:
             [_convert_to_zip(p.resolve())
              for p in Path(self.reqs_path).glob('*.whl')
              if p.is_file()]
 
         return self.reqs_path
+
+    def is_exclude(self, package_file: Path) -> bool:
+        from pkginfo import Wheel
+        if len(self.exclude_packages) == 0:
+            return True
+
+        w = Wheel(str(package_file))
+
+        return w.name in self.exclude_packages

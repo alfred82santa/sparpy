@@ -6,6 +6,13 @@ Sparpy: An Spark entry point for python
 Changelog
 ---------
 
+......
+v0.5.0
+......
+
+* Added `--exclude-python-packages` option in order to exclude python packages.
+* Better parsing plugins names.
+* Added `--exclude-packages` option in order to exclude spark packages.
 
 ......
 v0.4.5
@@ -123,7 +130,7 @@ It must be installed on a Spark edge node.
 
 .. code-block:: bash
 
-    $  pip install sparpy
+    $  pip install sparpy[base]
 
 
 ----------
