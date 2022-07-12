@@ -15,7 +15,7 @@ from pkg_resources import find_distributions, iter_entry_points, working_set
 from .config import ConfigParser
 from .processor import ProcessManager
 
-PLUGIN_REGEX = re.compile(r'([^[,]+(?:\[[^]]+])?)')
+PLUGIN_REGEX = re.compile(r'([^[,]+(?:\[[^]]+])?(?:(?:[><~=]?=|[><~])[^,]+)?)')
 
 
 class DynamicGroup(click.Group):

@@ -7,6 +7,13 @@ Changelog
 ---------
 
 ......
+v0.5.1
+......
+
+* Fix Python package regex.
+* Fix download script.
+
+......
 v0.5.0
 ......
 
