@@ -223,7 +223,7 @@ class DownloadPlugins:
     def is_exclude(self, package_file: Path) -> bool:
         from pkginfo import Wheel
         if len(self.exclude_packages) == 0:
-            return True
+            return False
 
         w = Wheel(str(package_file))
 
