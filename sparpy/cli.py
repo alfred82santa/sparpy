@@ -72,6 +72,7 @@ def sparpy_download(ctx,
                     no_self,
                     force_download,
                     pre,
+                    plugin_env,
                     # Output
                     convert_to_zip,
                     output_dir,
@@ -94,6 +95,7 @@ def sparpy_download(ctx,
                                        no_self=no_self,
                                        force_download=force_download,
                                        pre=pre,
+                                       env=plugin_env,
                                        logger=logger,
                                        convert_to_zip=convert_to_zip,
                                        download_dir=output_dir)
@@ -131,6 +133,7 @@ def sparpy_submit(ctx,
                   no_self,
                   force_download,
                   pre,
+                  plugin_env,
                   # Spark submit options
                   spark_submit_executable,
                   # Common Spark options
@@ -155,7 +158,7 @@ def sparpy_submit(ctx,
     logger = logger or build_logger(config, debug)
 
     if conf:
-        sparpy_conf = [tuple(k.split('=')) for k in conf if k.startswith('sparpy.')]
+        sparpy_conf = [tuple(k.split('=', 1)) for k in conf if k.startswith('sparpy.')]
         conf = [k for k in conf if not k.startswith('sparpy.')]
         if len(sparpy_conf):
             plugin = [*plugin, *[v for k, v in sparpy_conf if k == 'sparpy.plugins']]
@@ -188,6 +191,9 @@ def sparpy_submit(ctx,
             except (IndexError, AttributeError):
                 pass
 
+            plugin_env.update(dict([v.split('=', 1) for k, v in sparpy_conf
+                                    if k == 'sparpy.plugin-env']))
+
     reqs_path = ctx.invoke(sparpy_download,
                            config=config,
                            debug=debug,
@@ -201,6 +207,7 @@ def sparpy_submit(ctx,
                            no_self=no_self,
                            force_download=force_download,
                            pre=pre,
+                           plugin_env=plugin_env,
                            convert_to_zip=True,
                            logger=logger)
 
@@ -257,6 +264,7 @@ def isparpy(ctx,
             no_self,
             force_download,
             pre,
+            plugin_env,
             # Spark interactive options
             pyspark_executable,
             python_interactive_driver,
@@ -291,6 +299,7 @@ def isparpy(ctx,
                            no_self=no_self,
                            force_download=force_download,
                            pre=pre,
+                           plugin_env=plugin_env,
                            convert_to_zip=True,
                            logger=logger)
 

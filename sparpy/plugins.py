@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from itertools import chain
@@ -5,7 +6,7 @@ from logging import Logger, getLogger
 from pathlib import Path
 from pkgutil import iter_modules
 from tempfile import mkdtemp
-from typing import Iterable
+from typing import Dict, Iterable
 from urllib.parse import urlparse
 from zipimport import zipimporter
 
@@ -94,30 +95,39 @@ class DownloadPlugins:
                  pre: bool = None,
                  logger: Logger = None,
                  download_dir: str = None,
-                 convert_to_zip: bool = True):
+                 convert_to_zip: bool = True,
+                 env: Dict[str, str] = None):
         try:
-            config = config['plugins']
+            plugin_config = config['plugins']
         except (KeyError, TypeError):
-            config = ConfigParser(default_sections=('plugins',))
-            config = config['plugins']
+            config = ConfigParser(default_sections=('plugins', 'plugin-env'))
+            plugin_config = config['plugins']
+
+        try:
+            env_config = config['plugin-env']
+        except KeyError:
+            config.add_section('plugin-env')
+            env_config = config['plugin-env']
 
         self.logger = logger or getLogger(__name__)
 
-        self.extra_index_urls = config.getlist('extra-index-urls', fallback=[])
-        self.find_links = config.getlist('find-links', fallback=[])
-        self.no_index = config.getboolean('no-index', fallback=False)
-        self.cache_dir = config.getpath('cache-dir')
+        self.extra_index_urls = plugin_config.getlist('extra-index-urls', fallback=[])
+        self.find_links = plugin_config.getlist('find-links', fallback=[])
+        self.no_index = plugin_config.getboolean('no-index', fallback=False)
+        self.cache_dir = plugin_config.getpath('cache-dir')
 
-        self.plugins = config.getlist('plugins', fallback=[])
-        self.requirements_files = config.getpathlist('requirements-files', fallback=[])
-        self.constraints = config.getpathlist('constraints', fallback=[])
-        self.exclude_packages = config.getlist('exclude-packages', fallback=[])
+        self.plugins = plugin_config.getlist('plugins', fallback=[])
+        self.requirements_files = plugin_config.getpathlist('requirements-files', fallback=[])
+        self.constraints = plugin_config.getpathlist('constraints', fallback=[])
+        self.exclude_packages = plugin_config.getlist('exclude-packages', fallback=[])
 
-        self.download_dir_prefix = config.get('download-dir-prefix', fallback='sparpy_')
+        self.download_dir_prefix = plugin_config.get('download-dir-prefix', fallback='sparpy_')
 
-        self.no_self = config.getboolean('no-self', fallback=False)
-        self.force_download = config.getboolean('force-download', fallback=False)
-        self.pre = config.getboolean('pre', fallback=False)
+        self.no_self = plugin_config.getboolean('no-self', fallback=False)
+        self.force_download = plugin_config.getboolean('force-download', fallback=False)
+        self.pre = plugin_config.getboolean('pre', fallback=False)
+
+        self.env = dict(env_config)
 
         if plugins:
             self.plugins.extend(plugins)
@@ -148,6 +158,9 @@ class DownloadPlugins:
 
         if pre is not None:
             self.pre = pre
+
+        if env is not None:
+            self.env.update(env)
 
         if download_dir:
             self.reqs_path = download_dir
@@ -202,7 +215,11 @@ class DownloadPlugins:
         self.logger.info('Downloading python plugins...')
         self.logger.debug(' '.join(pip_exec_params))
 
-        process = ProcessManager(pip_exec_params, pass_through=debug)
+        env = os.environ.copy()
+        if self.env:
+            env.update(self.env)
+
+        process = ProcessManager(pip_exec_params, pass_through=debug, env=env)
         process.start_process()
         process.wait()
 
