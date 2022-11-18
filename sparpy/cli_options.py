@@ -8,11 +8,14 @@ from . import __version__
 from .config import load_user_config
 
 
-class EnvValues(click.types.StringParamType):
+class EnvValue(click.types.StringParamType):
     name = 'env_var=value'
 
     def convert(self, value, param, ctx):
-        value = super(EnvValues, self).convert(value, param, ctx)
+        if isinstance(value, tuple):
+            return value
+
+        value = super(EnvValue, self).convert(value, param, ctx)
         value = tuple(value.split('=', 1))
         if len(value) == 1:
             value = (value[0], '')
@@ -110,6 +113,13 @@ def plugins_options(func=None):
                 envvar='SPARPY_PRE_RELEASES',
                 help='Include pre-release and development versions. By default, sparpy only finds stable versions.'
             ),
+            click.option(
+                '--plugin-env',
+                type=EnvValue(),
+                multiple=True,
+                envvar='SPARPY_PLUGIN_ENVVARS',
+                help='Environment variables values for plugin download process'
+            ),
         )
 
     if func:
@@ -168,8 +178,9 @@ def common_spark_options(func=None):
             ),
             click.option(
                 '--env',
-                type=EnvValues(),
+                type=EnvValue(),
                 multiple=True,
+                envvar='SPARPY_ENVVARS',
                 help='Environment variables values'
             ),
             click.option(
@@ -257,6 +268,7 @@ def general_options(func=None):
                 '--config',
                 type=Config(),
                 default=load_user_config(),
+                envvar='SPARPY_CONFIG',
                 help='Path to configuration file'
             ),
             click.option(
@@ -264,6 +276,7 @@ def general_options(func=None):
                 type=bool,
                 default=False,
                 is_flag=True,
+                envvar='SPARPY_DEBUG',
                 help='Debug mode'
             ),
             click.version_option(version=__version__)

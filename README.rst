@@ -1,10 +1,24 @@
-=======================================
-Sparpy: An Spark entry point for python
-=======================================
+=====================================
+Sparpy: A Spark entrypoint for Python
+=====================================
 
 ---------
 Changelog
 ---------
+
+......
+v0.5.4
+......
+
+* Added `plugin-env` section on configuration file in order to be able to set environment
+  variables on plugin download process.
+
+* Added `--plugin-env` option (and its environment variable associated `SPARPY_PLUGIN_ENVVARS`)
+  in order to set environment variables on plugin download process. It could be necessary on some cases
+  using conda environments.
+
+* Added environment variable `SPARPY_CONFIG` for option `--config`.
+* Added environment variable `SPARPY_DEBUG` for option `--debug`.
 
 ......
 v0.5.3
@@ -227,6 +241,10 @@ Format:
     no-index=false
     no-self=false
     force-download=true
+
+    [plugin-env]
+
+    MY_ENV_VAR=value
 
     [interactive]
 
