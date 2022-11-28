@@ -44,7 +44,7 @@ with Path(Path(__file__).parent, 'README.rst').open(encoding='utf-8') as f:
 setup(
     name='sparpy',
     version=version,
-    description='An Spark entry point for python',
+    description='A Spark entry point for python',
     long_description=long_description,
     url='https://github.com/alfred82santa/sparpy',
     author='Alfred Santacatalina',
