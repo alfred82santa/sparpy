@@ -114,6 +114,14 @@ def plugins_options(func=None):
                 help='Include pre-release and development versions. By default, sparpy only finds stable versions.'
             ),
             click.option(
+                '--proxy',
+                is_flag=True,
+                type=str,
+                default=None,
+                envvar='SPARPY_PROXY',
+                help='Proxy to pass through to Python repositories.'
+            ),
+            click.option(
                 '--plugin-env',
                 type=EnvValue(),
                 multiple=True,

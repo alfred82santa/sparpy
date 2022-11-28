@@ -93,6 +93,7 @@ class DownloadPlugins:
                  no_self: bool = None,
                  force_download: bool = None,
                  pre: bool = None,
+                 proxy: str = None,
                  logger: Logger = None,
                  download_dir: str = None,
                  convert_to_zip: bool = True,
@@ -126,6 +127,7 @@ class DownloadPlugins:
         self.no_self = plugin_config.getboolean('no-self', fallback=False)
         self.force_download = plugin_config.getboolean('force-download', fallback=False)
         self.pre = plugin_config.getboolean('pre', fallback=False)
+        self.proxy = plugin_config.get('proxy')
 
         self.env = dict(env_config)
 
@@ -159,6 +161,9 @@ class DownloadPlugins:
         if pre is not None:
             self.pre = pre
 
+        if proxy is not None:
+            self.proxy = proxy
+
         if env is not None:
             self.env.update(env)
 
@@ -180,6 +185,9 @@ class DownloadPlugins:
 
         if self.pre:
             pip_exec_params.append('--pre')
+
+        if self.proxy:
+            pip_exec_params.extend(['--proxy', self.proxy])
 
         pip_exec_params.extend(chain.from_iterable([['--extra-index-url',
                                                      u,
